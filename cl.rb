@@ -3,7 +3,75 @@
 
 require 'find'
 
+require 'optparse'
+require 'ostruct'
 
+
+
+# Return a  structure describing the options.
+def parse(args)
+    # The options specified on the command line will be collected in *options*.
+    # We set default values here.
+    options = OpenStruct.new
+    options.directory = []
+    options.database = []
+
+    options.load = false
+    options.show = false
+    options.verbose = false
+
+    opt_parser = OptionParser.new do |opts|
+        opts.banner = "Usage: cl.rb [options]"
+
+        opts.separator ""
+        opts.separator "Specific options:"
+
+        # Mandatory argument.
+        opts.on("-d", "--dir DIRECTORY", "Read logs from given DIRECTORY ") do |dir|
+            options.directory << dir
+        end
+
+        opts.on("-D", "--D SQLITE", "Read data from a SQLITE database") do |db|
+            options.database << db
+        end
+
+        # Boolean switches
+        opts.on("-l", " --load ", "load data from DIRECTORY into SQLITE database") do |l|
+            options.load = l
+        end
+
+        opts.on("-s", " --show", "show statistics") do |s|
+            options.show = s
+        end
+
+        opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+            options.verbose = v
+        end
+
+        opts.separator ""
+        opts.separator "Common options:"
+
+        # No argument, shows at tail.  This will print an options summary.
+        opts.on_tail("-h", "--help", "Show this message") do
+            puts opts
+            exit
+        end
+
+        # Another typical switch to print the version.
+        opts.on_tail("--version", "Show version") do
+            raise NotImplementedError
+            # puts ::Version.join('.')
+            # exit
+        end
+    end
+
+    opt_parser.parse!(args)
+    options
+end  # parse()
+
+
+options = parse(ARGV)
+puts options
 
 
 

@@ -1,3 +1,8 @@
+## application log files
+data/s3logs/*
+## geoip data
+data/geoip/*
+
 *.gem
 *.rbc
 /.config

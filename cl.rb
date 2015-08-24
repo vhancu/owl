@@ -162,6 +162,66 @@ colnames = {:bucket_owner => 'Bucket Owner',
     :version_id => 'Version Id' }
 
 
+require "sqlite3"
+
+if options.load
+    # Open databases
+    db = SQLite3::Database.new "s3data.db"
+
+    rawdb = SQLite3::Database.new "s3raw.db"
+
+    # Create tables
+    rows = rawdb.execute <<-SQL
+    CREATE TABLE IF NOT EXISTS  s3data (
+        bucket_owner  text,
+        bucket  text,
+        time  text,
+        remote_ip  text,
+        requester  text,
+        request_id  text,
+        operation  text,
+        key  text,
+        request_uri  text,
+        http_status  text,
+        error_code  text,
+        bytes_sent  text,
+        object_size  text,
+        total_time  text,
+        turn_around_time  text,
+        referrer  text,
+        user_agent  text,
+        version_id text)
+    SQL
+
+    # month precision # day precision
+    rows = db.execute <<-SQL
+    CREATE TABLE IF NOT EXISTS  task_hour_cnt (
+        year  text,
+        month  text,
+        day  text,
+        hour  text,
+        count  text,
+        bytes_sent  text,
+        object_size  text,
+        total_time  text,
+        turn_around_time  text)
+    SQL
+
+
+    rows = db.execute <<-SQL
+    CREATE TABLE IF NOT EXISTS  task_geoip (
+        year  text,
+        month  text,
+        day  text,
+        remote_ip  text,
+        count  text,
+        bytes_sent  text,
+        object_size  text,
+        total_time  text,
+        turn_around_time  text)
+    SQL
+end
+
 
 ## process logs
 
@@ -176,20 +236,24 @@ files.each do |file|
     lines.each do |line|
         # data.push('/explor/'.match(line).class)
         begin
-            data.push(regex_string.match(line)[1..-1])
+            row = regex_string.match(line)[1..-1]
+            if options.load
+                rawdb.execute "insert into s3data values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )", row
+            end
+            data.push(row)
         rescue
             puts "error:" + line
         end
         # puts "+++" + line[0..10] + "+++"
         # puts regex_string.match(line)
-    end 
+    end
 
 end
 
 puts "-" * 80
 puts data.length
 puts "-" * 80
-puts data[0]
+#puts data[0]
 
 require 'date'
 
@@ -223,11 +287,16 @@ ip = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 
 referrer = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 
-data.each do |h| 
+data.each do |h|
     times.push(DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')) 
     dt = DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
     kdt = DateTime.new(dt.year, dt.month, dt.day, dt.hour)
-    # puts kdt
+
+    puts "=" * 80
+    puts kdt
+    puts "=" * 80
+    puts h
+    abort
     basics[kdt][0] += 1
     basics[kdt][1] += h[11].to_i
     basics[kdt][2] += h[12].to_i
@@ -347,100 +416,100 @@ basics.keys.sort.each do |h|
 
 end
 
+if options.show
+    puts "-" * 80
+    puts "First visit: " + times.min.httpdate.to_s 
+    puts "Last visit: " + times.max.httpdate.to_s
 
-puts "-" * 80
-puts "First visit: " + times.min.httpdate.to_s 
-puts "Last visit: " + times.max.httpdate.to_s
-
-puts "-" * 80
-months.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
-
-
-puts "-" * 80
-daymonth.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
-
-puts "-" * 80
-daysweek.keys.sort.each { |h| puts " " + h.to_s  + ":" + daysweek[h].to_s }
+    puts "-" * 80
+    months.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
 
 
-puts "-" * 80
-hours.keys.sort.each { |h| puts " " + h.to_s  + ":" + daysweek[h].to_s }
+    puts "-" * 80
+    daymonth.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
+
+    puts "-" * 80
+    daysweek.keys.sort.each { |h| puts " " + h.to_s  + ":" + daysweek[h].to_s }
 
 
-puts "-" * 80
-puts "-" * 80
-puts "-" * 80
-puts 'known traffic' + known[true].to_s
-puts 'non known traffic' + known[false].to_s
-puts "-" * 80
-
-puts "-" * 80
-os.keys.sort.each { |h| puts " " + h.to_s  + ":" + os[h].to_s }
-
-puts "-" * 80
-browsers.keys.sort.each { |h| puts " " + h.to_s  + ":" + browsers[h].to_s }
+    puts "-" * 80
+    hours.keys.sort.each { |h| puts " " + h.to_s  + ":" + daysweek[h].to_s }
 
 
-puts "-" * 80
-puts 'bot traffic' + bot[true].to_s
-# puts 'non bot traffic' + bot[false].to_s
+    puts "-" * 80
+    puts "-" * 80
+    puts "-" * 80
+    puts 'known traffic' + known[true].to_s
+    puts 'non known traffic' + known[false].to_s
+    puts "-" * 80
 
-# puts "-" * 80
-puts 'search_engine traffic' + search_engine[true].to_s
-# puts 'non search_engine traffic' + search_engine[false].to_s
+    puts "-" * 80
+    os.keys.sort.each { |h| puts " " + h.to_s  + ":" + os[h].to_s }
 
-# puts "-" * 80
-puts 'mobile traffic' + mobile[true].to_s
-# puts 'non mobile traffic' + mobile[false].to_s
-
-# puts "-" * 80
-puts 'tablet traffic' + tablet[true].to_s
-# puts 'non tablet traffic' + tablet[false].to_s
-
-# puts "-" * 80
-puts 'console traffic' + console[true].to_s
-# puts 'non console traffic' + console[false].to_s
+    puts "-" * 80
+    browsers.keys.sort.each { |h| puts " " + h.to_s  + ":" + browsers[h].to_s }
 
 
+    puts "-" * 80
+    puts 'bot traffic' + bot[true].to_s
+    # puts 'non bot traffic' + bot[false].to_s
 
-puts "-" * 80
-ip.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
+    # puts "-" * 80
+    puts 'search_engine traffic' + search_engine[true].to_s
+    # puts 'non search_engine traffic' + search_engine[false].to_s
 
-puts "-" * 80
-puts 'continent/country     traffic' 
-cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
+    # puts "-" * 80
+    puts 'mobile traffic' + mobile[true].to_s
+    # puts 'non mobile traffic' + mobile[false].to_s
 
+    # puts "-" * 80
+    puts 'tablet traffic' + tablet[true].to_s
+    # puts 'non tablet traffic' + tablet[false].to_s
 
-puts "-" * 80
-puts 'country     traffic' 
-countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
-
-puts "-" * 80
-puts 'referrer     traffic' 
-referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
-
-
-puts "-" * 80
-puts "-" * 30 + "HTTP CODES".center(20,' ') + "-" * 30 
-puts "-" * 80
-
-result = Hash.new(0)
-data.each { |h| result[h[9]] += 1 }
-# puts result
-result.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
+    # puts "-" * 80
+    puts 'console traffic' + console[true].to_s
+    # puts 'non console traffic' + console[false].to_s
 
 
-result = Hash.new  {|h,k| h[k] = [] }
 
-data.each { |h| result[h[9]].push([h[8],h[15]]) }
+    puts "-" * 80
+    ip.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
 
-# result["404"].each { |f| puts f[0].ljust(60,' ')  + ":" + f[1] }
-# puts "-" * 80
+    puts "-" * 80
+    puts 'continent/country     traffic' 
+    cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
 
-puts "-" * 30 + "404 Error code".center(20,' ') + "-" * 30 
 
-result2 = Hash.new(0)
-result["404"].each { |a| result2[a] += 1 }
+    puts "-" * 80
+    puts 'country     traffic' 
+    countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
 
-result2.each { |h,k| puts h[0][1...-1][0..50].ljust(55, ' ') + k.to_s + ' '*3 + h[1][1...-1][0..50] }
+    puts "-" * 80
+    puts 'referrer     traffic' 
+    referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
 
+
+    puts "-" * 80
+    puts "-" * 30 + "HTTP CODES".center(20,' ') + "-" * 30 
+    puts "-" * 80
+
+    result = Hash.new(0)
+    data.each { |h| result[h[9]] += 1 }
+    # puts result
+    result.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
+
+
+    result = Hash.new  {|h,k| h[k] = [] }
+
+    data.each { |h| result[h[9]].push([h[8],h[15]]) }
+
+    # result["404"].each { |f| puts f[0].ljust(60,' ')  + ":" + f[1] }
+    # puts "-" * 80
+
+    puts "-" * 30 + "404 Error code".center(20,' ') + "-" * 30 
+
+    result2 = Hash.new(0)
+    result["404"].each { |a| result2[a] += 1 }
+
+    result2.each { |h,k| puts h[0][1...-1][0..50].ljust(55, ' ') + k.to_s + ' '*3 + h[1][1...-1][0..50] }
+end

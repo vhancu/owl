@@ -300,8 +300,8 @@ data.each do |h|
     dt = DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
     kdt = DateTime.new(dt.year, dt.month, dt.day, dt.hour)
 
-    puts "=" * 80
-    puts kdt
+    #puts "=" * 80
+    #puts kdt
     #puts "=" * 80
     #puts h
 
@@ -312,82 +312,35 @@ data.each do |h|
     vect = [1, bytes_sent, object_size,total_time, turn_around_time]
 
     basics[kdt] = basics[kdt].vector_add(vect)
-    next
 
     browser = Browser.new(:ua => h[16], :accept_language => "en-us")
 
-    browsers[[browser.name,browser.version]][0] += 1
-    browsers[[browser.name,browser.version]][1] += bytes_sent
-    browsers[[browser.name,browser.version]][2] += object_size
-    browsers[[browser.name,browser.version]][3] += total_time
-    browsers[[browser.name,browser.version]][4] += turn_around_time
+    idx = [browser.name,browser.version]
+    browsers[idx] = browsers[idx].vector_add(vect)
 
-    os[browser.platform][0] += 1
-    os[browser.platform][1] += bytes_sent
-    os[browser.platform][2] += object_size
-    os[browser.platform][3] += total_time
-    os[browser.platform][4] += turn_around_time
+    os[browser.platform] = os[browser.platform].vector_add(vect)
 
-    bot[browser.bot?][0] += 1
-    bot[browser.bot?][1] += bytes_sent
-    bot[browser.bot?][2] += object_size
-    bot[browser.bot?][3] += total_time
-    bot[browser.bot?][4] += turn_around_time
+    bot[browser.bot?] = bot[browser.bot?].vector_add(vect)
 
-    search_engine[browser.search_engine?][0] += 1
-    search_engine[browser.search_engine?][1] += bytes_sent
-    search_engine[browser.search_engine?][2] += object_size
-    search_engine[browser.search_engine?][3] += total_time
-    search_engine[browser.search_engine?][4] += turn_around_time
+    search_engine[browser.search_engine?] = search_engine[browser.search_engine?].vector_add(vect)
 
-    known[browser.known?][0] += 1
-    known[browser.known?][1] += bytes_sent
-    known[browser.known?][2] += object_size
-    known[browser.known?][3] += total_time
-    known[browser.known?][4] += turn_around_time
+    known[browser.known?] = known[browser.known?].vector_add(vect)
 
-    mobile[browser.mobile?][0] += 1
-    mobile[browser.mobile?][1] += bytes_sent
-    mobile[browser.mobile?][2] += object_size
-    mobile[browser.mobile?][3] += total_time
-    mobile[browser.mobile?][4] += turn_around_time
+    mobile[browser.mobile?] = mobile[browser.mobile?].vector_add(vect)
 
-    tablet[browser.tablet?][0] += 1
-    tablet[browser.tablet?][1] += bytes_sent
-    tablet[browser.tablet?][2] += object_size
-    tablet[browser.tablet?][3] += total_time
-    tablet[browser.tablet?][4] += turn_around_time
+    tablet[browser.tablet?] = tablet[browser.tablet?].vector_add(vect)
 
-    console[browser.console?][0] += 1
-    console[browser.console?][1] += bytes_sent
-    console[browser.console?][2] += object_size
-    console[browser.console?][3] += total_time
-    console[browser.console?][4] += turn_around_time
+    console[browser.console?] = console[browser.console?].vector_add(vect)
 
+    ip[h[3]] = ip[h[3]].vector_add(vect)
 
-    ip[h[3]][0] += 1
-    ip[h[3]][1] += bytes_sent
-    ip[h[3]][2] += object_size
-    ip[h[3]][3] += total_time
-    ip[h[3]][4] += turn_around_time
+    idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]
+    cnames[idx] = cnames[idx].vector_add(vect)
 
-    cnames[[gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]][0] += 1
-    cnames[[gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]][1] += bytes_sent
-    cnames[[gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]][2] += object_size
-    cnames[[gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]][3] += total_time
-    cnames[[gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]][4] += turn_around_time
+    idx = gip.country(h[3]).to_hash[:country_code2]
+    countries[idx] = countries[idx].vector_add(vect)
 
-    countries[gip.country(h[3]).to_hash[:country_code2]][0] += 1
-    countries[gip.country(h[3]).to_hash[:country_code2]][1] += bytes_sent
-    countries[gip.country(h[3]).to_hash[:country_code2]][2] += object_size
-    countries[gip.country(h[3]).to_hash[:country_code2]][3] += total_time
-    countries[gip.country(h[3]).to_hash[:country_code2]][4] += turn_around_time
-
-    referrer[h[15]][0] += 1
-    referrer[h[15]][1] += bytes_sent
-    referrer[h[15]][2] += object_size
-    referrer[h[15]][3] += total_time
-    referrer[h[15]][4] += turn_around_time
+    referrer[h[15]] = referrer[h[15]].vector_add(vect)
 end
 
 

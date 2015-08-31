@@ -349,32 +349,16 @@ daymonth = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 daysweek = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 hours = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 
-
+# sorting by datetime for basics
 basics.keys.sort.each do |h|
     # puts h.month
-    months[h.month][0] += basics[h][0]
-    months[h.month][1] += basics[h][1]
-    months[h.month][2] += basics[h][2]
-    months[h.month][3] += basics[h][3]
-    months[h.month][4] += basics[h][4]
+    months[h.month] = months[h.month].vector_add(basics[h])
 
-    daymonth[[h.month, h.day]][0] += basics[h][0]
-    daymonth[[h.month, h.day]][1] += basics[h][1]
-    daymonth[[h.month, h.day]][2] += basics[h][2]
-    daymonth[[h.month, h.day]][3] += basics[h][3]
-    daymonth[[h.month, h.day]][4] += basics[h][4]
+    daymonth[[h.month, h.day]] = daymonth[[h.month, h.day]].vector_add(basics[h])
 
-    daysweek[h.wday][0] += basics[h][0]
-    daysweek[h.wday][1] += basics[h][1]
-    daysweek[h.wday][2] += basics[h][2]
-    daysweek[h.wday][3] += basics[h][3]
-    daysweek[h.wday][4] += basics[h][4]
+    daysweek[h.wday] = daysweek[h.wday].vector_add(basics[h])
 
-    hours[h.hour][0] += basics[h][0]
-    hours[h.hour][1] += basics[h][1]
-    hours[h.hour][2] += basics[h][2]
-    hours[h.hour][3] += basics[h][3]
-    hours[h.hour][4] += basics[h][4]
+    hours[h.hour] = hours[h.hour].vector_add(basics[h])
 
 end
 

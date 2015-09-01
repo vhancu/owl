@@ -271,39 +271,29 @@ require 'browser'
 
 require 'geoip'
 
+gip = GeoIP.new('data/geoip/GeoIP.dat')
 
 
 times = []
-basics = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+basics        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+os            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+browsers      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+bot           = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+search_engine = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+known         = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+mobile        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+tablet        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+console       = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+cnames        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+countries     = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+ip            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+referrer      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 
-
-os = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-browsers = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-bot = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-search_engine = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-known = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-mobile = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-tablet = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-console = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-
-
-gip = GeoIP.new('data/geoip/GeoIP.dat')
-
-cnames = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-countries = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-ip = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-
-referrer = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 
 data.each do |h|
     times.push(DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')) 
     dt = DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
     kdt = DateTime.new(dt.year, dt.month, dt.day, dt.hour)
-
-    #puts "=" * 80
-    #puts kdt
-    #puts "=" * 80
-    #puts h
 
     bytes_sent = h[11].to_i
     object_size = h[12].to_i
@@ -362,24 +352,54 @@ basics.keys.sort.each do |h|
 
 end
 
+
+def showTable (title, colname, data)
+    puts
+    puts title.upcase.center(92)
+
+    puts "-" * 92
+    print colname[0].center(16)
+    print "Count".ljust(12)
+    print "Bytes".ljust(16)
+    print "Object".ljust(16)
+    print "Total".ljust(16)
+    print "Turn Around".ljust(16)
+    print "\n"
+
+    print colname[1].center(16)
+    print "".ljust(12)
+    print "Sent".ljust(16)
+    print "Size".ljust(16)
+    print "Time".ljust(16)
+    print "Time".ljust(16)
+    print "\n"
+    puts "-" * 92
+
+    data.sort.map do |h,k|
+        print h.to_s.center(16)
+        print k[0].to_s.ljust(12)
+        print k[1].to_s.ljust(16)
+        print k[2].to_s.ljust(16)
+        print k[3].to_s.ljust(16)
+        print k[4].to_s.ljust(16)
+        print "\n"
+    end
+    puts "-" * 92
+    puts
+end
+
 if options.show
     puts "-" * 80
-    puts "First visit: " + times.min.httpdate.to_s 
-    puts "Last visit: " + times.max.httpdate.to_s
+    puts "First visit: " + times.min.httpdate.to_s
+    puts "Last visit : " + times.max.httpdate.to_s
 
-    puts "-" * 80
-    months.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
+    showTable "Monthly history", ["Month",""], months
 
+    showTable "Days of month", ["Day of","Month"], daymonth
 
-    puts "-" * 80
-    daymonth.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
+    showTable "Days of week", ["Hours of", "the Day"], daysweek
 
-    puts "-" * 80
-    daysweek.keys.sort.each { |h| puts " " + h.to_s  + ":" + daysweek[h].to_s }
-
-
-    puts "-" * 80
-    hours.keys.sort.each { |h| puts " " + h.to_s  + ":" + daysweek[h].to_s }
+    showTable "Hours of the Days", ["Hours of", "the Day"], hours
 
 
     puts "-" * 80
@@ -389,54 +409,45 @@ if options.show
     puts 'non known traffic' + known[false].to_s
     puts "-" * 80
 
-    puts "-" * 80
-    os.keys.sort.each { |h| puts " " + h.to_s  + ":" + os[h].to_s }
+    showTable "Operating Systems", ["Operating", "Systems"], os
 
-    puts "-" * 80
-    browsers.keys.sort.each { |h| puts " " + h.to_s  + ":" + browsers[h].to_s }
+    showTable "Browsers", ["Browsers", ""], browsers
 
-
-    puts "-" * 80
-    puts 'bot traffic' + bot[true].to_s
+    showTable "Bots", ["Bot", "Traffic"], { "bot" => bot[true]}
     # puts 'non bot traffic' + bot[false].to_s
 
-    # puts "-" * 80
-    puts 'search_engine traffic' + search_engine[true].to_s
+    showTable "Search Engines", ["Search Engines", "Traffic"], {"search engine" => search_engine [true]}
     # puts 'non search_engine traffic' + search_engine[false].to_s
 
-    # puts "-" * 80
-    puts 'mobile traffic' + mobile[true].to_s
+    showTable "Mobiles", ["Mobile", "Traffic"], {"mobile" => mobile[true]}
     # puts 'non mobile traffic' + mobile[false].to_s
 
-    # puts "-" * 80
-    puts 'tablet traffic' + tablet[true].to_s
+    showTable "Tablets", ["Tablet", "Traffic"], {"tablet" => tablet[true]}
     # puts 'non tablet traffic' + tablet[false].to_s
 
-    # puts "-" * 80
-    puts 'console traffic' + console[true].to_s
+    showTable "Consoles", ["Console", "Traffic"], {"console" => console[true]}
     # puts 'non console traffic' + console[false].to_s
-
 
 
     puts "-" * 80
     ip.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
 
     puts "-" * 80
-    puts 'continent/country     traffic' 
+    puts 'continent/country     traffic'
     cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
 
 
     puts "-" * 80
-    puts 'country     traffic' 
+    puts 'country     traffic'
     countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
 
     puts "-" * 80
-    puts 'referrer     traffic' 
+    puts 'referrer     traffic'
     referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
 
 
     puts "-" * 80
-    puts "-" * 30 + "HTTP CODES".center(20,' ') + "-" * 30 
+    puts "-" * 30 + "HTTP CODES".center(20,' ') + "-" * 30
     puts "-" * 80
 
     result = Hash.new(0)
@@ -452,7 +463,7 @@ if options.show
     # result["404"].each { |f| puts f[0].ljust(60,' ')  + ":" + f[1] }
     # puts "-" * 80
 
-    puts "-" * 30 + "404 Error code".center(20,' ') + "-" * 30 
+    puts "-" * 30 + "404 Error code".center(20,' ') + "-" * 30
 
     result2 = Hash.new(0)
     result["404"].each { |a| result2[a] += 1 }

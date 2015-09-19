@@ -428,45 +428,33 @@ if options.show
     showTable "Consoles", ["Console", "Traffic"], {"console" => console[true]}
     # puts 'non console traffic' + console[false].to_s
 
+    showTable "IP", ["IP", "Traffic"], ip
 
-    puts "-" * 80
-    ip.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
+    showTable "Countries", ["Region/Country", "Traffic"], cnames
+    #cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
 
-    puts "-" * 80
-    puts 'continent/country     traffic'
-    cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
+    showTable "Countries", ["Country", "Traffic"], countries
+    #countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
 
-
-    puts "-" * 80
-    puts 'country     traffic'
-    countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
-
-    puts "-" * 80
-    puts 'referrer     traffic'
-    referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
+    showTable "Referrer", ["Referrer", "Traffic"], referrer
+    #referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
 
 
-    puts "-" * 80
     puts "-" * 30 + "HTTP CODES".center(20,' ') + "-" * 30
-    puts "-" * 80
-
     result = Hash.new(0)
     data.each { |h| result[h[9]] += 1 }
-    # puts result
     result.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
-
+    #showTable "http codes", ["HTTP Codes", "Traffic"], result
 
     result = Hash.new  {|h,k| h[k] = [] }
-
     data.each { |h| result[h[9]].push([h[8],h[15]]) }
-
     # result["404"].each { |f| puts f[0].ljust(60,' ')  + ":" + f[1] }
     # puts "-" * 80
-
     puts "-" * 30 + "404 Error code".center(20,' ') + "-" * 30
-
     result2 = Hash.new(0)
     result["404"].each { |a| result2[a] += 1 }
-
     result2.each { |h,k| puts h[0][1...-1][0..50].ljust(55, ' ') + k.to_s + ' '*3 + h[1][1...-1][0..50] }
+
+=begin
+=end
 end

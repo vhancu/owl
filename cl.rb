@@ -358,42 +358,83 @@ basics.keys.sort.each do |h|
 
 end
 
+#
+#def showTable (title, colname, data)
+#    puts
+#    puts title.upcase.center(92)
+#
+#    puts "-" * 92
+#    print colname[0].center(16)
+#    print "Count".ljust(12)
+#    print "Bytes".ljust(16)
+#    print "Object".ljust(16)
+#    print "Total".ljust(16)
+#    print "Turn Around".ljust(16)
+#    print "\n"
+#
+#    print colname[1].center(16)
+#    print "".ljust(12)
+#    print "Sent".ljust(16)
+#    print "Size".ljust(16)
+#    print "Time".ljust(16)
+#    print "Time".ljust(16)
+#    print "\n"
+#    puts "-" * 92
+#
+#    data.sort.map do |h,k|
+#        print h.to_s.center(16)
+#        print k[0].to_s.ljust(12)
+#        print k[1].to_s.ljust(16)
+#        print k[2].to_s.ljust(16)
+#        print k[3].to_s.ljust(16)
+#        print k[4].to_s.ljust(16)
+#        print "\n"
+#    end
+#    puts "-" * 92
+#    puts
+#end
 
-def showTable (title, colname, data)
+def showTable (title, colname, data, widths=[16,12,16,16,16,16])
     puts
-    puts title.upcase.center(92)
+    length = widths.inject(0, :+)
+    puts title.upcase.center(length)
 
-    puts "-" * 92
-    print colname[0].center(16)
-    print "Count".ljust(12)
-    print "Bytes".ljust(16)
-    print "Object".ljust(16)
-    print "Total".ljust(16)
-    print "Turn Around".ljust(16)
+    puts "-" * length
+    print colname[0].center(widths[0])
+    print "Count".rjust(widths[1])
+    print "Bytes".rjust(widths[2])
+    print "Object".rjust(widths[3])
+    print "Total".rjust(widths[4])
+    print "Turn Around".rjust(widths[5])
     print "\n"
 
-    print colname[1].center(16)
-    print "".ljust(12)
-    print "Sent".ljust(16)
-    print "Size".ljust(16)
-    print "Time".ljust(16)
-    print "Time".ljust(16)
+    print colname[1].center(widths[0])
+    print "".rjust(widths[1])
+    print "Sent".rjust(widths[2])
+    print "Size".rjust(widths[3])
+    print "Time".rjust(widths[4])
+    print "Time".rjust(widths[5])
     print "\n"
-    puts "-" * 92
+    puts "-" * length
 
     data.sort.map do |h,k|
-        print h.to_s.center(16)
-        print k[0].to_s.ljust(12)
-        print k[1].to_s.ljust(16)
-        print k[2].to_s.ljust(16)
-        print k[3].to_s.ljust(16)
-        print k[4].to_s.ljust(16)
+        if h.is_a? String 
+            print h.to_s[0..widths[0]].ljust(widths[0]+1)
+        elsif h.is_a? Array
+            print h.join("/")[0..widths[0]].ljust(widths[0]+1)
+        else
+            print h.to_s[0..widths[0]].ljust(widths[0]+1)
+        end
+        print k[0].to_s.rjust(widths[1])
+        print k[1].to_s.rjust(widths[2])
+        print k[2].to_s.rjust(widths[3])
+        print k[3].to_s.rjust(widths[4])
+        print k[4].to_s.rjust(widths[5])
         print "\n"
     end
-    puts "-" * 92
+    puts "-" * length
     puts
 end
-
 if options.show
     puts "-" * 80
     puts "First visit: " + times.min.httpdate.to_s
@@ -419,7 +460,7 @@ if options.show
 
         showTable "Operating Systems", ["Operating", "Systems"], os
 
-        showTable "Browsers", ["Browsers", ""], browsers
+        showTable "Browsers", ["Browsers", ""], browsers, [22,12,16,16,16,16]
 
         showTable "Bots", ["Bot", "Traffic"], { "bot" => bot[true]}
         # puts 'non bot traffic' + bot[false].to_s
@@ -442,7 +483,7 @@ if options.show
     end
 
     if options.sopt.include? 'part4' or options.sopt.include? 'all'
-        showTable "Countries", ["Region/Country", "Traffic"], cnames
+        showTable "Countries", ["Region/Country", "Traffic"], cnames, [22,12,16,16,16,16]
         #cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
 
         showTable "Countries", ["Country", "Traffic"], countries
@@ -450,7 +491,7 @@ if options.show
     end
 
     if options.sopt.include? 'part5' or options.sopt.include? 'all'
-        showTable "Referrer", ["Referrer", "Traffic"], referrer
+        showTable "Referrer", ["Referrer", "Traffic"], referrer, [50,12,16,16,16,16]
         #referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
     end
 
@@ -478,7 +519,7 @@ if options.show
         data.each { |h| result[h[9]].push([h[8],h[15]]) }
         result2 = Hash.new(0)
         result["404"].each { |a| result2[a] += 1 }
-        
+
         puts
         puts '404 error code'.upcase.center(92)
         puts "-" * 92

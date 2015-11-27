@@ -26,6 +26,7 @@ def parse(args)
 
     options.load = false
     options.show = false
+    options.sopt = []
     options.verbose = false
 
     opt_parser = OptionParser.new do |opts|
@@ -44,14 +45,17 @@ def parse(args)
         end
 
         # Boolean switches
-        opts.on("-l", " --load ", "load data from DIRECTORY into SQLITE database") do |l|
+        opts.on("-l", "--load ", "load data from DIRECTORY into SQLITE database") do |l|
             options.load = l
         end
 
-        opts.on("-s", " --show", "show statistics") do |s|
+        opts.on("-s", "--show", "show statistics") do |s|
             options.show = s
         end
 
+        opts.on("--list=[x,y,z]", Array) do |so| 
+            options.sopt = so
+        end
         opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
             options.verbose = v
         end
@@ -250,7 +254,9 @@ files.each do |file|
             end
             data.push(row)
         rescue
-            puts "error:" + line
+            if options.verbose
+                puts "error:" + line
+            end
         end
         # puts "+++" + line[0..10] + "+++"
         # puts regex_string.match(line)
@@ -393,68 +399,102 @@ if options.show
     puts "First visit: " + times.min.httpdate.to_s
     puts "Last visit : " + times.max.httpdate.to_s
 
-    showTable "Monthly history", ["Month",""], months
+    if options.sopt.include? 'part1' or options.sopt.include? 'all'
+        showTable "Monthly history", ["Month",""], months
 
-    showTable "Days of month", ["Day of","Month"], daymonth
+        showTable "Days of month", ["Day of","Month"], daymonth
 
-    showTable "Days of week", ["Hours of", "the Day"], daysweek
+        showTable "Days of week", ["Hours of", "the Day"], daysweek
 
-    showTable "Hours of the Days", ["Hours of", "the Day"], hours
+        showTable "Hours of the Days", ["Hours of", "the Day"], hours
+    end
+
+    if options.sopt.include? 'part2' or options.sopt.include? 'all'
+        puts "-" * 80
+        puts "-" * 80
+        puts "-" * 80
+        puts 'known traffic' + known[true].to_s
+        puts 'non known traffic' + known[false].to_s
+        puts "-" * 80
+
+        showTable "Operating Systems", ["Operating", "Systems"], os
+
+        showTable "Browsers", ["Browsers", ""], browsers
+
+        showTable "Bots", ["Bot", "Traffic"], { "bot" => bot[true]}
+        # puts 'non bot traffic' + bot[false].to_s
+
+        showTable "Search Engines", ["Search Engines", "Traffic"], {"search engine" => search_engine [true]}
+        # puts 'non search_engine traffic' + search_engine[false].to_s
+
+        showTable "Mobiles", ["Mobile", "Traffic"], {"mobile" => mobile[true]}
+        # puts 'non mobile traffic' + mobile[false].to_s
+
+        showTable "Tablets", ["Tablet", "Traffic"], {"tablet" => tablet[true]}
+        # puts 'non tablet traffic' + tablet[false].to_s
+
+        showTable "Consoles", ["Console", "Traffic"], {"console" => console[true]}
+        # puts 'non console traffic' + console[false].to_s
+    end
+
+    if options.sopt.include? 'part3' or options.sopt.include? 'all'
+        showTable "IP", ["IP", "Traffic"], ip
+    end
+
+    if options.sopt.include? 'part4' or options.sopt.include? 'all'
+        showTable "Countries", ["Region/Country", "Traffic"], cnames
+        #cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
+
+        showTable "Countries", ["Country", "Traffic"], countries
+        #countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
+    end
+
+    if options.sopt.include? 'part5' or options.sopt.include? 'all'
+        showTable "Referrer", ["Referrer", "Traffic"], referrer
+        #referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
+    end
+
+    if options.sopt.include? 'part6' or options.sopt.include? 'all'
+        result = Hash.new(0)
+        data.each { |h| result[h[9]] += 1 }
+
+        puts
+        puts 'HTTP CODES'.upcase.center(92)
+        puts "-" * 92
+        print "Code".center(12)
+        print "Count".rjust(16)
+        print "\n"
+        puts "-" * 92
+        result.each do |h,k|
+            print h.to_s.center(12)
+            print k.to_s.rjust(16)
+            print "\n"
+        end
+        puts "-" * 92
+        puts
 
 
-    puts "-" * 80
-    puts "-" * 80
-    puts "-" * 80
-    puts 'known traffic' + known[true].to_s
-    puts 'non known traffic' + known[false].to_s
-    puts "-" * 80
-
-    showTable "Operating Systems", ["Operating", "Systems"], os
-
-    showTable "Browsers", ["Browsers", ""], browsers
-
-    showTable "Bots", ["Bot", "Traffic"], { "bot" => bot[true]}
-    # puts 'non bot traffic' + bot[false].to_s
-
-    showTable "Search Engines", ["Search Engines", "Traffic"], {"search engine" => search_engine [true]}
-    # puts 'non search_engine traffic' + search_engine[false].to_s
-
-    showTable "Mobiles", ["Mobile", "Traffic"], {"mobile" => mobile[true]}
-    # puts 'non mobile traffic' + mobile[false].to_s
-
-    showTable "Tablets", ["Tablet", "Traffic"], {"tablet" => tablet[true]}
-    # puts 'non tablet traffic' + tablet[false].to_s
-
-    showTable "Consoles", ["Console", "Traffic"], {"console" => console[true]}
-    # puts 'non console traffic' + console[false].to_s
-
-    showTable "IP", ["IP", "Traffic"], ip
-
-    showTable "Countries", ["Region/Country", "Traffic"], cnames
-    #cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
-
-    showTable "Countries", ["Country", "Traffic"], countries
-    #countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
-
-    showTable "Referrer", ["Referrer", "Traffic"], referrer
-    #referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
-
-
-    puts "-" * 30 + "HTTP CODES".center(20,' ') + "-" * 30
-    result = Hash.new(0)
-    data.each { |h| result[h[9]] += 1 }
-    result.each { |h,k| puts " " + h.to_s  + ":" + k.to_s }
-    #showTable "http codes", ["HTTP Codes", "Traffic"], result
-
-    result = Hash.new  {|h,k| h[k] = [] }
-    data.each { |h| result[h[9]].push([h[8],h[15]]) }
-    # result["404"].each { |f| puts f[0].ljust(60,' ')  + ":" + f[1] }
-    # puts "-" * 80
-    puts "-" * 30 + "404 Error code".center(20,' ') + "-" * 30
-    result2 = Hash.new(0)
-    result["404"].each { |a| result2[a] += 1 }
-    result2.each { |h,k| puts h[0][1...-1][0..50].ljust(55, ' ') + k.to_s + ' '*3 + h[1][1...-1][0..50] }
-
+        result = Hash.new  {|h,k| h[k] = [] }
+        data.each { |h| result[h[9]].push([h[8],h[15]]) }
+        result2 = Hash.new(0)
+        result["404"].each { |a| result2[a] += 1 }
+        
+        puts
+        puts '404 error code'.upcase.center(92)
+        puts "-" * 92
+        print "Request".ljust(55)
+        print "Count".rjust(12)
+        print "\n"
+        puts "-" * 92
+        result2.each do |h,k|
+            print h[0][1...-1][0..50].ljust(55, ' ')
+            print k.to_s.rjust(12)
+            #print h[1][1...-1][0..50]
+            print "\n"
+        end
+        puts "-" * 92
+        puts
+    end
 =begin
 =end
 end

@@ -358,43 +358,10 @@ basics.keys.sort.each do |h|
 
 end
 
-#
-#def showTable (title, colname, data)
-#    puts
-#    puts title.upcase.center(92)
-#
-#    puts "-" * 92
-#    print colname[0].center(16)
-#    print "Count".ljust(12)
-#    print "Bytes".ljust(16)
-#    print "Object".ljust(16)
-#    print "Total".ljust(16)
-#    print "Turn Around".ljust(16)
-#    print "\n"
-#
-#    print colname[1].center(16)
-#    print "".ljust(12)
-#    print "Sent".ljust(16)
-#    print "Size".ljust(16)
-#    print "Time".ljust(16)
-#    print "Time".ljust(16)
-#    print "\n"
-#    puts "-" * 92
-#
-#    data.sort.map do |h,k|
-#        print h.to_s.center(16)
-#        print k[0].to_s.ljust(12)
-#        print k[1].to_s.ljust(16)
-#        print k[2].to_s.ljust(16)
-#        print k[3].to_s.ljust(16)
-#        print k[4].to_s.ljust(16)
-#        print "\n"
-#    end
-#    puts "-" * 92
-#    puts
-#end
 
-def showTable (title, colname, data, widths=[16,12,16,16,16,16])
+
+
+def showTable (title, colname, data, widths=[16,12,16,16,16,16], sortcat:1)
     puts
     length = widths.inject(0, :+)
     puts title.upcase.center(length)
@@ -417,7 +384,13 @@ def showTable (title, colname, data, widths=[16,12,16,16,16,16])
     print "\n"
     puts "-" * length
 
-    data.sort.map do |h,k|
+    if sortcat == 1
+        data = data.sort_by{|k, v| [k[0], k[1].to_i]}
+    else
+        data = data.sort
+    end
+
+    data.map do |h,k|
         if h.is_a? String 
             print h.to_s[0..widths[0]].ljust(widths[0]+1)
         elsif h.is_a? Array
@@ -435,19 +408,21 @@ def showTable (title, colname, data, widths=[16,12,16,16,16,16])
     puts "-" * length
     puts
 end
+
+
 if options.show
     puts "-" * 80
     puts "First visit: " + times.min.httpdate.to_s
     puts "Last visit : " + times.max.httpdate.to_s
 
     if options.sopt.include? 'part1' or options.sopt.include? 'all'
-        showTable "Monthly history", ["Month",""], months
+        showTable "Monthly history", ["Month",""], months, sortcat:2
 
         showTable "Days of month", ["Day of","Month"], daymonth
 
-        showTable "Days of week", ["Hours of", "the Day"], daysweek
+        showTable "Days of week", ["Hours of", "the Day"], daysweek, sortcat:2
 
-        showTable "Hours of the Days", ["Hours of", "the Day"], hours
+        showTable "Hours of the Days", ["Hours of", "the Day"], hours, sortcat:2
     end
 
     if options.sopt.include? 'part2' or options.sopt.include? 'all'
@@ -463,19 +438,14 @@ if options.show
         showTable "Browsers", ["Browsers", ""], browsers, [22,12,16,16,16,16]
 
         showTable "Bots", ["Bot", "Traffic"], { "bot" => bot[true]}
-        # puts 'non bot traffic' + bot[false].to_s
 
         showTable "Search Engines", ["Search Engines", "Traffic"], {"search engine" => search_engine [true]}
-        # puts 'non search_engine traffic' + search_engine[false].to_s
 
         showTable "Mobiles", ["Mobile", "Traffic"], {"mobile" => mobile[true]}
-        # puts 'non mobile traffic' + mobile[false].to_s
 
         showTable "Tablets", ["Tablet", "Traffic"], {"tablet" => tablet[true]}
-        # puts 'non tablet traffic' + tablet[false].to_s
 
         showTable "Consoles", ["Console", "Traffic"], {"console" => console[true]}
-        # puts 'non console traffic' + console[false].to_s
     end
 
     if options.sopt.include? 'part3' or options.sopt.include? 'all'
@@ -484,15 +454,12 @@ if options.show
 
     if options.sopt.include? 'part4' or options.sopt.include? 'all'
         showTable "Countries", ["Region/Country", "Traffic"], cnames, [22,12,16,16,16,16]
-        #cnames.keys.sort.each { |h| puts " " + h.to_s  + ":" + cnames[h].to_s }
 
         showTable "Countries", ["Country", "Traffic"], countries
-        #countries.keys.sort.each { |h| puts " " + h.to_s  + ":" + countries[h].to_s }
     end
 
     if options.sopt.include? 'part5' or options.sopt.include? 'all'
         showTable "Referrer", ["Referrer", "Traffic"], referrer, [50,12,16,16,16,16]
-        #referrer.keys.sort.each { |h| puts " " + h.to_s  + ":" + referrer[h].to_s }
     end
 
     if options.sopt.include? 'part6' or options.sopt.include? 'all'

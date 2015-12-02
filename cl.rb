@@ -6,6 +6,13 @@ require 'find'
 require 'optparse'
 require 'ostruct'
 
+
+######### CONFIGURATION #########
+raw_database = 'sqlite://s3raw.db'
+work_database = 'sqlite://owl.db'
+
+####### END CONFIGURATION #######
+
 module Enumerable
     def sum
         inject &:+
@@ -45,8 +52,12 @@ def parse(args)
         end
 
         # Boolean switches
-        opts.on("-l", "--load ", "load data from DIRECTORY into SQLITE database") do |l|
+        opts.on("-l", "--load", "load data from DIRECTORY into SQLITE database") do |l|
             options.load = l
+        end
+
+        opts.on("-r", "--raw", "load raw data from DIRECTORY into DBRAW database") do |r|
+            options.raw = r
         end
 
         opts.on("-s", "--show", "show statistics") do |s|
@@ -174,65 +185,71 @@ colnames = {:bucket_owner => 'Bucket Owner',
     :version_id => 'Version Id' }
 
 
-require "sqlite3"
+require "sequel"
+
+#connect to an in-memory database
+if options.raw
+    DBRAW = Sequel.connect(raw_database)
+
+    # create tables
+    DBRAW.create_table? :s3raw do # create the table only if it doesn't exists.
+        String :bucket_owner
+        String :bucket
+        String :time
+        String :remote_ip
+        String :requester
+        String :request_id
+        String :operation
+        String :key
+        String :request_uri
+        String :http_status
+        String :error_code
+        String :bytes_sent
+        String :object_size
+        String :total_time
+        String :turn_around_time
+        String :referrer
+        String :user_agent
+        String :version_id 
+    end
+
+    # create a dataset from the s3raw table
+    raw = DBRAW[:s3raw]
+end
 
 if options.load
-    # Open databases
-    db = SQLite3::Database.new "s3data.db"
+    DB = Sequel.connect(work_database)
 
-    rawdb = SQLite3::Database.new "s3raw.db"
+    DB.create_table? :task_hour_cnt do  # create the table only if it doesn't exists.
+        String :year
+        String :month
+        String :day
+        String :hour
+        Integer :count
+        Integer :bytes_sent
+        Integer :object_size
+        Integer :total_time
+        Integer :turn_around_time
+    end
 
-    # Create tables
-    rows = rawdb.execute <<-SQL
-    CREATE TABLE IF NOT EXISTS  s3data (
-        bucket_owner  text,
-        bucket  text,
-        time  text,
-        remote_ip  text,
-        requester  text,
-        request_id  text,
-        operation  text,
-        key  text,
-        request_uri  text,
-        http_status  text,
-        error_code  text,
-        bytes_sent  text,
-        object_size  text,
-        total_time  text,
-        turn_around_time  text,
-        referrer  text,
-        user_agent  text,
-        version_id text)
-    SQL
+    DB.create_table? :task_geoip do
+        String :year
+        String :month
+        String :day
+        String :remote_ip
+        Interger :count
+        Integer :bytes_sent
+        Integer :object_size
+        Integer :total_time
+        Integer :turn_around_time
+    end
 
-    # month precision # day precision
-    rows = db.execute <<-SQL
-    CREATE TABLE IF NOT EXISTS  task_hour_cnt (
-        year  text,
-        month  text,
-        day  text,
-        hour  text,
-        count  text,
-        bytes_sent  text,
-        object_size  text,
-        total_time  text,
-        turn_around_time  text)
-    SQL
-
-
-    rows = db.execute <<-SQL
-    CREATE TABLE IF NOT EXISTS  task_geoip (
-        year  text,
-        month  text,
-        day  text,
-        remote_ip  text,
-        count  text,
-        bytes_sent  text,
-        object_size  text,
-        total_time  text,
-        turn_around_time  text)
-    SQL
+    # create datasets from tables
+    tgeoip = DB[:task_geoip]
+    thour = DB[:task_hour_cnt]
 end
+
+
 
 
 ## process logs
@@ -246,11 +263,27 @@ files = instance.getFiles
 files.each do |file|
     lines = instance.getAllLines(file)
     lines.each do |line|
-        # data.push('/explor/'.match(line).class)
         begin
             row = regex_string.match(line)[1..-1]
-            if options.load
-                rawdb.execute "insert into s3data values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )", row
+            if options.raw
+                raw.insert( :bucket_owner => row[0],
+                            :bucket => row[1],
+                            :time => row[2],
+                            :remote_ip => row[3],
+                            :requester => row[4],
+                            :request_id => row[5],
+                            :operation => row[6],
+                            :key => row[7],
+                            :request_uri => row[8],
+                            :http_status => row[9],
+                            :error_code => row[10],
+                            :bytes_sent => row[11],
+                            :object_size => row[12],
+                            :total_time => row[13],
+                            :turn_around_time => row[14],
+                            :referrer => row[15],
+                            :user_agent => row[16],
+                            :version_id => row[17] )
             end
             data.push(row)
         rescue
@@ -258,10 +291,7 @@ files.each do |file|
                 puts "error:" + line
             end
         end
-        # puts "+++" + line[0..10] + "+++"
-        # puts regex_string.match(line)
     end
-
 end
 
 puts "-" * 80

@@ -466,23 +466,20 @@ if options.load
     ###TODO: PART 6 ###
 end
 
-
 months = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 daymonth = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 daysweek = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 hours = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 
-# sorting by datetime for basics
-basics.keys.sort.each do |h|
-    # puts h.month
-    months[h.month] = months[h.month].vector_add(basics[h])
 
-    daymonth[[h.month, h.day]] = daymonth[[h.month, h.day]].vector_add(basics[h])
+basics.keys.each do |k|
 
-    daysweek[h.wday] = daysweek[h.wday].vector_add(basics[h])
+    h = DateTime.new(options.year, options.month, k[0], k[1])
 
-    hours[h.hour] = hours[h.hour].vector_add(basics[h])
-
+    months[h.month] = months[h.month].vector_add(basics[k])
+    daymonth[[h.month, h.day]] = daymonth[[h.month, h.day]].vector_add(basics[k])
+    daysweek[h.wday] = daysweek[h.wday].vector_add(basics[k])
+    hours[h.hour] = hours[h.hour].vector_add(basics[k])
 end
 
 
@@ -517,7 +514,7 @@ def showTable (title, colname, data, widths=[16,12,16,16,16,16], sortcat:1)
     end
 
     data.map do |h,k|
-        if h.is_a? String 
+        if h.is_a? String
             print h.to_s[0..widths[0]].ljust(widths[0]+1)
         elsif h.is_a? Array
             print h.join("/")[0..widths[0]].ljust(widths[0]+1)

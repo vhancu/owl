@@ -535,15 +535,17 @@ end
 
 if options.show
     puts "-" * 80
-    puts "First visit: " + times.min.httpdate.to_s
-    puts "Last visit : " + times.max.httpdate.to_s
+    #TODO: correct this part
+    #puts "First visit: " + times.min.httpdate.to_s
+    #puts "Last visit : " + times.max.httpdate.to_s
 
+    ### PART 1 ###
     if options.sopt.include? 'part1' or options.sopt.include? 'all'
         showTable "Monthly history", ["Month",""], months, sortcat:2
 
         showTable "Days of month", ["Day of","Month"], daymonth
 
-        showTable "Days of week", ["Hours of", "the Day"], daysweek, sortcat:2
+        showTable "Days of week", ["Days of", "Week"], daysweek, sortcat:2
 
         showTable "Hours of the Days", ["Hours of", "the Day"], hours, sortcat:2
     end

@@ -6,6 +6,7 @@ require 'find'
 require 'optparse'
 require 'ostruct'
 
+require "sequel"
 
 ######### CONFIGURATION #########
 raw_database = 'sqlite://s3raw.db'
@@ -185,9 +186,7 @@ colnames = {:bucket_owner => 'Bucket Owner',
     :version_id => 'Version Id' }
 
 
-require "sequel"
 
-#connect to an in-memory database
 if options.raw
     DBRAW = Sequel.connect(raw_database)
 
@@ -210,7 +209,7 @@ if options.raw
         String :turn_around_time
         String :referrer
         String :user_agent
-        String :version_id 
+        String :version_id
     end
 
     # create a dataset from the s3raw table
@@ -220,33 +219,84 @@ end
 if options.load
     DB = Sequel.connect(work_database)
 
-    DB.create_table? :task_hour_cnt do  # create the table only if it doesn't exists.
-        String :year
-        String :month
-        String :day
-        String :hour
+    ### PART1 ###
+    DB.create_table? :task_basics do
+        Integer :year
+        Integer :month
+        Integer :day
+        Integer :hour
         Integer :count
         Integer :bytes_sent
         Integer :object_size
         Integer :total_time
         Integer :turn_around_time
     end
+    #tbasics = DB[:task_basics]
 
-    DB.create_table? :task_geoip do
-        String :year
-        String :month
-        String :day
-        String :remote_ip
-        Interger :count
+    ### PART2 ###
+    DB.create_table? :task_browser do
+        Integer :year
+        Integer :month
+        String :browser_name
+        String :browser_version
+        String :browser_platform
+        String :browser_is_bot
+        String :browser_is_search_engine
+        String :browser_is_known
+        String :browser_is_mobile
+        String :browser_is_tablet
+        String :browser_is_console
+        Integer :count
         Integer :bytes_sent
         Integer :object_size
         Integer :total_time
         Integer :turn_around_time
     end
+    #tbrowswe = DB[:task_browser]
 
+    ### PART 3 ###
+    DB.create_table? :task_ip_address do
+        Integer :year
+        Integer :month
+        String :ip_address
+        Integer :count
+        Integer :bytes_sent
+        Integer :object_size
+        Integer :total_time
+        Integer :turn_around_time
+    end
+    #tip_address = DB[:task_ip_address]
+
+    ### PART4 ###
+    DB.create_table? :task_countries do
+        Integer :year
+        Integer :month
+        String :region
+        String :country_code
+        String :country_name
+        Integer :count
+        Integer :bytes_sent
+        Integer :object_size
+        Integer :total_time
+        Integer :turn_around_time
+    end
+    #tcountries = DB[:task_countries]
+
+    ### PART 5 ###
+    DB.create_table? :task_referrer do
+        Integer :year
+        Integer :month
+        String :referrer
+        Integer :count
+        Integer :bytes_sent
+        Integer :object_size
+        Integer :total_time
+        Integer :turn_around_time
+    end
+    #treferrer = DB[:task_referrer]
+
+    # TODO: part6
     # create datasets from tables
-    tgeoip = DB[:task_geoip]
-    thour = DB[:task_hour_cnt]
 end
 
 

@@ -437,6 +437,35 @@ data.each do |h|
     end
 end
 
+if options.load
+    ### PART 1 ###
+    cols = [:year, :month, :day, :hour, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    data = basics.map {|k,v|  [options.year, options.month, *k, *v] }
+    DB[:task_basics].import(cols, data)
+
+    ### PART 2 ###
+    cols = [:year, :month, :browser_name, :browser_version, :browser_platform, :browser_is_bot, :browser_is_search_engine, :browser_is_known, :browser_is_mobile, :browser_is_tablet, :browser_is_console, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    data = browsers.map {|k,v|  [options.year, options.month, *k, *v] }
+    DB[:task_browser].import(cols, data)
+
+    ### PART 3 ###
+    cols = [:year, :month, :ip_address, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    data = ip.map {|k,v|  [options.year, options.month, k, *v] }
+    DB[:task_ip_address].import(cols, data)
+
+    ### PART 4 ###
+    cols = [:year, :month, :region, :country_code, :country_name, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    data = countries.map {|k,v|  [options.year, options.month, *k, *v] }
+    DB[:task_countries].import(cols, data)
+
+    ### PART 5 ###
+    cols = [:year, :month, :referrer, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    data = referrer.map {|k,v|  [options.year, options.month, k, *v] }
+    DB[:task_referrer].import(cols, data)
+
+    ###TODO: PART 6 ###
+end
+
 
 months = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 daymonth = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
@@ -455,7 +484,6 @@ basics.keys.sort.each do |h|
     hours[h.hour] = hours[h.hour].vector_add(basics[h])
 
 end
-
 
 
 

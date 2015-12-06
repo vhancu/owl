@@ -8,6 +8,12 @@ require 'ostruct'
 
 require "sequel"
 
+require 'date'
+
+require 'browser'
+
+require 'geoip'
+
 ######### CONFIGURATION #########
 raw_database = 'sqlite://s3raw.db'
 work_database = 'sqlite://owl.db'
@@ -23,6 +29,7 @@ module Enumerable
         zip(*others).collect &:sum
     end
 end
+
 
 # Return a  structure describing the options.
 def parse(args)
@@ -52,6 +59,15 @@ def parse(args)
             options.database << db
         end
 
+        # filtering
+        opts.on("-y", "--year YEAR", "filter by YEAR") do |y|
+            options.year = y.to_i
+        end
+
+        opts.on("-m", "--month MONTH", "filter by MONTH 1..12") do |m|
+            options.month = m.to_i
+        end
+
         # Boolean switches
         opts.on("-l", "--load", "load data from DIRECTORY into SQLITE database") do |l|
             options.load = l
@@ -65,7 +81,7 @@ def parse(args)
             options.show = s
         end
 
-        opts.on("--list=[x,y,z]", Array) do |so| 
+        opts.on("--list=[x,y,z]", Array) do |so|
             options.sopt = so
         end
         opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
@@ -296,7 +312,6 @@ if options.load
     #treferrer = DB[:task_referrer]
 
     # TODO: part6
-    # create datasets from tables
 end
 
 
@@ -349,74 +364,77 @@ puts data.length
 puts "-" * 80
 #puts data[0]
 
-require 'date'
-
-require 'browser'
-
-
-
-require 'geoip'
 
 gip = GeoIP.new('data/geoip/GeoIP.dat')
 
 
 times = []
 basics        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-os            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#os            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 browsers      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-bot           = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-search_engine = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-known         = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-mobile        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-tablet        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-console       = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-cnames        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#bot           = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#search_engine = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#known         = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#mobile        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#tablet        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#console       = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+#cnames        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 countries     = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 ip            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 referrer      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 
 
 data.each do |h|
-    times.push(DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')) 
+    times.push(DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z'))
     dt = DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
-    kdt = DateTime.new(dt.year, dt.month, dt.day, dt.hour)
+    if (dt.year == options.year and dt.month == options.month)
+        #kdt = DateTime.new(dt.year, dt.month, dt.day, dt.hour)
 
-    bytes_sent = h[11].to_i
-    object_size = h[12].to_i
-    total_time = h[13].to_i
-    turn_around_time = h[14].to_i
-    vect = [1, bytes_sent, object_size,total_time, turn_around_time]
+        bytes_sent = h[11].to_i
+        object_size = h[12].to_i
+        total_time = h[13].to_i
+        turn_around_time = h[14].to_i
+        vect = [1, bytes_sent, object_size,total_time, turn_around_time]
 
-    basics[kdt] = basics[kdt].vector_add(vect)
+        ### PART 1 ###
+        idx = [dt.day, dt.hour]
+        basics[idx] = basics[idx].vector_add(vect)
+        #basics[kdt] = basics[kdt].vector_add(vect)
 
-    browser = Browser.new(:ua => h[16], :accept_language => "en-us")
+        ### PART 2 ###
+        browser = Browser.new(:ua => h[16], :accept_language => "en-us")
 
-    idx = [browser.name,browser.version]
-    browsers[idx] = browsers[idx].vector_add(vect)
+        idx = [browser.name, browser.version, browser.platform.to_s, browser.bot?, browser.search_engine?, browser.known?, browser.mobile?, browser.tablet?, browser.console?]
+        browsers[idx] = browsers[idx].vector_add(vect)
+ 
+        #idx = [browser.name,browser.version]
+        #browsers[idx] = browsers[idx].vector_add(vect)
+        #os[browser.platform] = os[browser.platform].vector_add(vect)
+        #bot[browser.bot?] = bot[browser.bot?].vector_add(vect)
+        #search_engine[browser.search_engine?] = search_engine[browser.search_engine?].vector_add(vect)
+        #known[browser.known?] = known[browser.known?].vector_add(vect)
+        #mobile[browser.mobile?] = mobile[browser.mobile?].vector_add(vect)
+        #tablet[browser.tablet?] = tablet[browser.tablet?].vector_add(vect)
+        #console[browser.console?] = console[browser.console?].vector_add(vect)
 
-    os[browser.platform] = os[browser.platform].vector_add(vect)
+        ### PART 3 ###
+        ip[h[3]] = ip[h[3]].vector_add(vect)
 
-    bot[browser.bot?] = bot[browser.bot?].vector_add(vect)
+        ### PART 4 ###
+        idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_code2], gip.country(h[3]).to_hash[:country_name]]
+        countries[idx] = countries[idx].vector_add(vect)
 
-    search_engine[browser.search_engine?] = search_engine[browser.search_engine?].vector_add(vect)
+        #idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]
+        #cnames[idx] = cnames[idx].vector_add(vect)
 
-    known[browser.known?] = known[browser.known?].vector_add(vect)
+        #idx = gip.country(h[3]).to_hash[:country_code2]
+        #countries[idx] = countries[idx].vector_add(vect)
 
-    mobile[browser.mobile?] = mobile[browser.mobile?].vector_add(vect)
+        ### PART 5 ###
+        referrer[h[15]] = referrer[h[15]].vector_add(vect)
 
-    tablet[browser.tablet?] = tablet[browser.tablet?].vector_add(vect)
-
-    console[browser.console?] = console[browser.console?].vector_add(vect)
-
-    ip[h[3]] = ip[h[3]].vector_add(vect)
-
-    idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]
-    cnames[idx] = cnames[idx].vector_add(vect)
-
-    idx = gip.country(h[3]).to_hash[:country_code2]
-    countries[idx] = countries[idx].vector_add(vect)
-
-    referrer[h[15]] = referrer[h[15]].vector_add(vect)
+        ### TODO: PART 6 ###
+    end
 end
 
 

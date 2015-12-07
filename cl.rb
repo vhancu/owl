@@ -370,15 +370,7 @@ gip = GeoIP.new('data/geoip/GeoIP.dat')
 
 times = []
 basics        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#os            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 browsers      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#bot           = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#search_engine = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#known         = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#mobile        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#tablet        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#console       = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
-#cnames        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 countries     = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 ip            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 referrer      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
@@ -388,8 +380,6 @@ data.each do |h|
     times.push(DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z'))
     dt = DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
     if (dt.year == options.year and dt.month == options.month)
-        #kdt = DateTime.new(dt.year, dt.month, dt.day, dt.hour)
-
         bytes_sent = h[11].to_i
         object_size = h[12].to_i
         total_time = h[13].to_i
@@ -399,23 +389,11 @@ data.each do |h|
         ### PART 1 ###
         idx = [dt.day, dt.hour]
         basics[idx] = basics[idx].vector_add(vect)
-        #basics[kdt] = basics[kdt].vector_add(vect)
 
         ### PART 2 ###
         browser = Browser.new(:ua => h[16], :accept_language => "en-us")
-
         idx = [browser.name, browser.version, browser.platform.to_s, browser.bot?, browser.search_engine?, browser.known?, browser.mobile?, browser.tablet?, browser.console?]
         browsers[idx] = browsers[idx].vector_add(vect)
- 
-        #idx = [browser.name,browser.version]
-        #browsers[idx] = browsers[idx].vector_add(vect)
-        #os[browser.platform] = os[browser.platform].vector_add(vect)
-        #bot[browser.bot?] = bot[browser.bot?].vector_add(vect)
-        #search_engine[browser.search_engine?] = search_engine[browser.search_engine?].vector_add(vect)
-        #known[browser.known?] = known[browser.known?].vector_add(vect)
-        #mobile[browser.mobile?] = mobile[browser.mobile?].vector_add(vect)
-        #tablet[browser.tablet?] = tablet[browser.tablet?].vector_add(vect)
-        #console[browser.console?] = console[browser.console?].vector_add(vect)
 
         ### PART 3 ###
         ip[h[3]] = ip[h[3]].vector_add(vect)
@@ -533,6 +511,16 @@ def showTable (title, colname, data, widths=[16,12,16,16,16,16], sortcat:1)
 end
 
 
+def filterData ()
+    filtered = Hash.new {|h,k| h[k] = [0,0,0,0,0] }
+    data = yield
+    keys = data.keys
+    keys.map do |k|
+        filtered[k] = data[k].inject([0,0,0,0,0]) { |result, element| result.vector_add(element[1]) }
+    end
+    return filtered
+end
+
 if options.show
     puts "-" * 80
     #TODO: correct this part
@@ -550,26 +538,35 @@ if options.show
         showTable "Hours of the Days", ["Hours of", "the Day"], hours, sortcat:2
     end
 
+    ### PART 2 ###
     if options.sopt.include? 'part2' or options.sopt.include? 'all'
-        puts "-" * 80
-        puts "-" * 80
-        puts "-" * 80
-        puts 'known traffic' + known[true].to_s
-        puts 'non known traffic' + known[false].to_s
-        puts "-" * 80
+        puts "-" * 120
 
+        os = filterData() {browsers.group_by{|k,v| k[2]}}
         showTable "Operating Systems", ["Operating", "Systems"], os
 
-        showTable "Browsers", ["Browsers", ""], browsers, [22,12,16,16,16,16]
+        brw = filterData() {browsers.group_by {|k,v| [k[0],k[1]]}}
+        showTable "Browsers", ["Browsers", ""], brw, [22,12,16,16,16,16]
 
+        bot = filterData() {browsers.group_by {|k,v| k[3]}}
         showTable "Bots", ["Bot", "Traffic"], { "bot" => bot[true]}
 
-        showTable "Search Engines", ["Search Engines", "Traffic"], {"search engine" => search_engine [true]}
+        search_engine = filterData() {browsers.group_by {|k,v| k[4]}}
+        showTable "Search Engines", ["Search Engines", "Traffic"], {"search engine" => search_engine[true]}
 
+        known  = filterData() {browsers.group_by {|k,v| k[5]}}
+        #some renaming
+        known["known"] = known.delete true
+        known["unknown"] = known.delete false
+        showTable "Known", ["Known", "Traffic"], known
+
+        mobile = filterData() {browsers.group_by {|k,v| k[6]}}
         showTable "Mobiles", ["Mobile", "Traffic"], {"mobile" => mobile[true]}
 
+        tablet = filterData() {browsers.group_by {|k,v| k[7]}}
         showTable "Tablets", ["Tablet", "Traffic"], {"tablet" => tablet[true]}
 
+        console =  filterData() {browsers.group_by {|k,v| k[8]}}
         showTable "Consoles", ["Console", "Traffic"], {"console" => console[true]}
     end
 

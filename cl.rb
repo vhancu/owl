@@ -311,7 +311,30 @@ if options.load
     end
     #treferrer = DB[:task_referrer]
 
-    # TODO: part6
+    ### PART 6 ###
+    DB.create_table? :task_http_codes do
+        Integer :year
+        Integer :month
+        Integer :httpcode
+        Integer :count
+        Integer :bytes_sent
+        Integer :object_size
+        Integer :total_time
+        Integer :turn_around_time
+    end
+    #thttp_codes = DB[:task_http_codes]
+
+    DB.create_table? :task_http_440 do
+        Integer :year
+        Integer :month
+        Integer :request
+        Integer :count
+        Integer :bytes_sent
+        Integer :object_size
+        Integer :total_time
+        Integer :turn_around_time
+    end
+    #thttp_440 = DB[:task_http_440]
 end
 
 
@@ -374,6 +397,8 @@ browsers      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 countries     = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 ip            = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 referrer      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+http_codes    = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
+http_440      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 
 
 data.each do |h|
@@ -411,7 +436,11 @@ data.each do |h|
         ### PART 5 ###
         referrer[h[15]] = referrer[h[15]].vector_add(vect)
 
-        ### TODO: PART 6 ###
+        ### PART 6 ###
+        http_codes[h[9]] = http_codes[h[9]].vector_add(vect)
+        if h[9].to_i == 404
+            http_440[h[8]] = http_440[h[8]].vector_add(vect)
+        end
     end
 end
 
@@ -441,7 +470,14 @@ if options.load
     data = referrer.map {|k,v|  [options.year, options.month, k, *v] }
     DB[:task_referrer].import(cols, data)
 
-    ###TODO: PART 6 ###
+    ### PART 6 ###
+    cols = [:year, :month, :httpcode, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    data = http_codes.map {|k,v|  [options.year, options.month, k, *v] }
+    DB[:task_http_codes].import(cols, data)
+
+    cols = [:year, :month, :request, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    data = http_440.map {|k,v|  [options.year, options.month, k, *v] }
+    DB[:task_http_440].import(cols, data)
 end
 
 months = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
@@ -582,51 +618,15 @@ if options.show
         showTable "Regions", ["Regions", "Traffic"], regions
     end
 
+    ### PART 5 ###
     if options.sopt.include? 'part5' or options.sopt.include? 'all'
         showTable "Referrer", ["Referrer", "Traffic"], referrer, [50,12,16,16,16,16]
     end
 
+    ### PART 6 ###
     if options.sopt.include? 'part6' or options.sopt.include? 'all'
-        result = Hash.new(0)
-        data.each { |h| result[h[9]] += 1 }
+        showTable "HTTP Codes", ["HTTP Codes", "Traffic"], http_codes
 
-        puts
-        puts 'HTTP CODES'.upcase.center(92)
-        puts "-" * 92
-        print "Code".center(12)
-        print "Count".rjust(16)
-        print "\n"
-        puts "-" * 92
-        result.each do |h,k|
-            print h.to_s.center(12)
-            print k.to_s.rjust(16)
-            print "\n"
-        end
-        puts "-" * 92
-        puts
-
-
-        result = Hash.new  {|h,k| h[k] = [] }
-        data.each { |h| result[h[9]].push([h[8],h[15]]) }
-        result2 = Hash.new(0)
-        result["404"].each { |a| result2[a] += 1 }
-
-        puts
-        puts '404 error code'.upcase.center(92)
-        puts "-" * 92
-        print "Request".ljust(55)
-        print "Count".rjust(12)
-        print "\n"
-        puts "-" * 92
-        result2.each do |h,k|
-            print h[0][1...-1][0..50].ljust(55, ' ')
-            print k.to_s.rjust(12)
-            #print h[1][1...-1][0..50]
-            print "\n"
-        end
-        puts "-" * 92
-        puts
+        showTable "440 Error Code", ["404 Error Code", "Traffic"], http_440, [50,12,16,16,16,16]
     end
-=begin
-=end
 end

@@ -574,10 +574,12 @@ if options.show
         showTable "IP", ["IP", "Traffic"], ip
     end
 
+    ### PART 4 ###
     if options.sopt.include? 'part4' or options.sopt.include? 'all'
-        showTable "Countries", ["Region/Country", "Traffic"], cnames, [22,12,16,16,16,16]
+        showTable "Countries", ["Region/Code/Country", "Traffic"], countries, [22,12,16,16,16,16]
 
-        showTable "Countries", ["Country", "Traffic"], countries
+        regions =  filterData() {countries.group_by {|k,v| k[0]}}
+        showTable "Regions", ["Regions", "Traffic"], regions
     end
 
     if options.sopt.include? 'part5' or options.sopt.include? 'all'

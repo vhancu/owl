@@ -43,6 +43,7 @@ def parse(args)
     options.show = false
     options.sopt = []
     options.verbose = false
+    options.clean = false
 
     opt_parser = OptionParser.new do |opts|
         opts.banner = "Usage: cl.rb [options]"
@@ -79,6 +80,10 @@ def parse(args)
 
         opts.on("-s", "--show", "show statistics") do |s|
             options.show = s
+        end
+
+        opts.on("--clean", "delete results data before insert(not working for raw data)") do |c|
+            options.clean = c
         end
 
         opts.on("--list=[x,y,z]", Array) do |so|
@@ -232,6 +237,7 @@ if options.raw
     raw = DBRAW[:s3raw]
 end
 
+
 if options.load
     DB = Sequel.connect(work_database)
 
@@ -247,7 +253,7 @@ if options.load
         Integer :total_time
         Integer :turn_around_time
     end
-    #tbasics = DB[:task_basics]
+    tbasics = DB[:task_basics]
 
     ### PART2 ###
     DB.create_table? :task_browser do
@@ -268,7 +274,7 @@ if options.load
         Integer :total_time
         Integer :turn_around_time
     end
-    #tbrowswe = DB[:task_browser]
+    tbrowser = DB[:task_browser]
 
     ### PART 3 ###
     DB.create_table? :task_ip_address do
@@ -281,7 +287,7 @@ if options.load
         Integer :total_time
         Integer :turn_around_time
     end
-    #tip_address = DB[:task_ip_address]
+    tip_address = DB[:task_ip_address]
 
     ### PART4 ###
     DB.create_table? :task_countries do
@@ -296,7 +302,7 @@ if options.load
         Integer :total_time
         Integer :turn_around_time
     end
-    #tcountries = DB[:task_countries]
+    tcountries = DB[:task_countries]
 
     ### PART 5 ###
     DB.create_table? :task_referrer do
@@ -309,7 +315,7 @@ if options.load
         Integer :total_time
         Integer :turn_around_time
     end
-    #treferrer = DB[:task_referrer]
+    treferrer = DB[:task_referrer]
 
     ### PART 6 ###
     DB.create_table? :task_http_codes do
@@ -322,7 +328,7 @@ if options.load
         Integer :total_time
         Integer :turn_around_time
     end
-    #thttp_codes = DB[:task_http_codes]
+    thttp_codes = DB[:task_http_codes]
 
     DB.create_table? :task_http_440 do
         Integer :year
@@ -334,9 +340,20 @@ if options.load
         Integer :total_time
         Integer :turn_around_time
     end
-    #thttp_440 = DB[:task_http_440]
+    thttp_440 = DB[:task_http_440]
 end
 
+
+if options.clean
+    # TODO: inplement clean logic for RAW data store
+    tbasics.where('year = ? and month = ?', options.year, options.month).delete
+    tbrowser.where('year = ? and month = ?', options.year, options.month).delete
+    tip_address.where('year = ? and month = ?', options.year, options.month).delete
+    tcountries.where('year = ? and month = ?', options.year, options.month).delete
+    treferrer.where('year = ? and month = ?', options.year, options.month).delete
+    thttp_codes.where('year = ? and month = ?', options.year, options.month).delete
+    thttp_440.where('year = ? and month = ?', options.year, options.month).delete
+end
 
 
 

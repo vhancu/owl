@@ -38,10 +38,11 @@ end
 def parse(args)
     # The options specified on the command line will be collected in *options*.
     # We set default values here.
-    options = OpenStruct.new
-    options.directory = []
-    options.database = []
 
+    options = OpenStruct.new
+    options.input = :d
+    options.path = []
+    options.db = false
     options.load = false
     options.show = false
     options.sopt = []
@@ -52,16 +53,40 @@ def parse(args)
         opts.banner = "Usage: cl.rb [options]"
 
         opts.separator ""
-        opts.separator "Specific options:"
+        opts.separator "Data sources:"
 
-        # Mandatory argument.
-        opts.on("-d", "--dir DIRECTORY", "Read logs from given DIRECTORY ") do |dir|
-            options.directory << dir
+        opts.on("-I INPUT", "--input INPUT", [:d, :r, :p],
+            "Select input source", "    d -> directory,", 
+            "    r -> raw data from database,", "    p -> already processed data)",
+            "default d") do |t|
+            options.input = t
         end
 
-        opts.on("-D", "--D SQLITE", "Read data from a SQLITE database") do |db|
-            options.database << db
+        opts.on("-p PATH", "--dir PATH", "Read logs from given PATH ") do |dir|
+            options.path << dir
         end
+
+        opts.on("-l", "--load", "save results in database") do |l|
+            options.load = l
+        end
+
+        opts.on("--clean", "delete results data before insert", "(not working for raw data)") do |c|
+            options.clean = c
+        end
+
+        opts.on("-r", "--raw", "save raw data in database") do |r|
+            options.raw = r
+        end
+
+        opts.separator ""
+        opts.separator "Display:"
+
+        opts.on("-s", "--show", "show statistics") do |s|
+            options.show = s
+        end
+
+        opts.separator ""
+        opts.separator "Filters:"
 
         # filtering
         opts.on("-y", "--year YEAR", "filter by YEAR") do |y|
@@ -72,28 +97,9 @@ def parse(args)
             options.month = m.to_i
         end
 
-        # Boolean switches
-        opts.on("-l", "--load", "load data from DIRECTORY into SQLITE database") do |l|
-            options.load = l
-        end
-
-        opts.on("-r", "--raw", "load raw data from DIRECTORY into DBRAW database") do |r|
-            options.raw = r
-        end
-
-        opts.on("-s", "--show", "show statistics") do |s|
-            options.show = s
-        end
-
-        opts.on("--clean", "delete results data before insert(not working for raw data)") do |c|
-            options.clean = c
-        end
-
-        opts.on("--list=[x,y,z]", Array) do |so|
+        opts.on("--list=[x,y,z]", Array, "limit what to display", "valid options: all, part1,", 
+                "   part2, part3, part4, part5, part6") do |so|
             options.sopt = so
-        end
-        opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
-            options.verbose = v
         end
 
         opts.separator ""
@@ -110,6 +116,10 @@ def parse(args)
             raise NotImplementedError
             # puts ::Version.join('.')
             # exit
+        end
+
+        opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+            options.verbose = v
         end
     end
 

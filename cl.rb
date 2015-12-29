@@ -18,6 +18,9 @@ require 'geoip'
 raw_database = 'sqlite://s3raw.db'
 work_database = 'sqlite://owl.db'
 
+geoip_path = 'data/geoip/GeoIP.dat'
+logs_path = 'data/s3logs'
+
 ####### END CONFIGURATION #######
 
 module Enumerable
@@ -116,8 +119,12 @@ end  # parse()
 
 
 options = parse(ARGV)
-puts options
 
+
+
+if options.verbose
+    puts options
+end
 
 
 ### HELPER classes ###
@@ -127,9 +134,8 @@ class Batch
     @@locked = false
 
 
-    def initialize(path, db)
+    def initialize(path)
         @path=path
-        @db=db
     end
 
     def getFiles()
@@ -361,7 +367,7 @@ end
 
 data = []
 lines = []
-instance = Batch.new('data/s3logs','')
+instance = Batch.new(logs_path)
 files = instance.getFiles
 
 
@@ -405,7 +411,7 @@ puts "-" * 80
 #puts data[0]
 
 
-gip = GeoIP.new('data/geoip/GeoIP.dat')
+gip = GeoIP.new(geoip_path)
 
 
 times = []

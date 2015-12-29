@@ -130,8 +130,6 @@ end  # parse()
 
 options = parse(ARGV)
 
-
-
 if options.verbose
     puts options
 end
@@ -224,7 +222,7 @@ colnames = {:bucket_owner => 'Bucket Owner',
 
 
 
-if options.raw
+if options.raw || options.input == :r
     DBRAW = Sequel.connect(raw_database)
 
     # create tables
@@ -254,7 +252,7 @@ if options.raw
 end
 
 
-if options.load
+if options.load || options.input == :p
     DB = Sequel.connect(work_database)
 
     ### PART1 ###
@@ -377,39 +375,68 @@ end
 
 data = []
 lines = []
-instance = Batch.new(logs_path)
-files = instance.getFiles
 
 
-files.each do |file|
-    lines = instance.getAllLines(file)
-    lines.each do |line|
-        begin
-            row = regex_string.match(line)[1..-1]
-            if options.raw
-                raw.insert( :bucket_owner => row[0],
-                            :bucket => row[1],
-                            :time => row[2],
-                            :remote_ip => row[3],
-                            :requester => row[4],
-                            :request_id => row[5],
-                            :operation => row[6],
-                            :key => row[7],
-                            :request_uri => row[8],
-                            :http_status => row[9],
-                            :error_code => row[10],
-                            :bytes_sent => row[11],
-                            :object_size => row[12],
-                            :total_time => row[13],
-                            :turn_around_time => row[14],
-                            :referrer => row[15],
-                            :user_agent => row[16],
-                            :version_id => row[17] )
-            end
-            data.push(row)
-        rescue
-            if options.verbose
-                puts "error:" + line
+
+if options.input == :d
+    instance = Batch.new(logs_path)
+    files = instance.getFiles
+elsif options.input == :r
+    raw.each do |r|
+        line = []
+        line << r[:bucket_owner]
+        line << r[:bucket]
+        line << r[:time]
+        line << r[:remote_ip]
+        line << r[:requester]
+        line << r[:request_id]
+        line << r[:operation]
+        line << r[:key]
+        line << r[:request_uri]
+        line << r[:http_status]
+        line << r[:error_code]
+        line << r[:bytes_sent]
+        line << r[:object_size]
+        line << r[:total_time]
+        line << r[:turn_around_time]
+        line << r[:referrer]
+        line << r[:user_agent]
+        line << r[:version_id]
+        data.push(line)
+    end
+end
+
+if options.input == :d
+    files.each do |file|
+        lines = instance.getAllLines(file)
+        lines.each do |line|
+            begin
+                row = regex_string.match(line)[1..-1]
+                if options.raw
+                    raw.insert( :bucket_owner => row[0],
+                                :bucket => row[1],
+                                :time => row[2],
+                                :remote_ip => row[3],
+                                :requester => row[4],
+                                :request_id => row[5],
+                                :operation => row[6],
+                                :key => row[7],
+                                :request_uri => row[8],
+                                :http_status => row[9],
+                                :error_code => row[10],
+                                :bytes_sent => row[11],
+                                :object_size => row[12],
+                                :total_time => row[13],
+                                :turn_around_time => row[14],
+                                :referrer => row[15],
+                                :user_agent => row[16],
+                                :version_id => row[17] )
+                end
+                data.push(row)
+            rescue
+                if options.verbose
+                    puts "error:" + line
+                end
             end
         end
     end

@@ -347,7 +347,7 @@ if options.load || options.input == :p
     DB.create_table? :task_http_440 do
         Integer :year
         Integer :month
-        Integer :request
+        String :request
         Integer :count
         Integer :bytes_sent
         Integer :object_size
@@ -451,7 +451,6 @@ puts "-" * 80
 gip = GeoIP.new(geoip_path)
 
 
-times = []
 basics        = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 browsers      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 countries     = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
@@ -461,48 +460,54 @@ http_codes    = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 http_440      = Hash.new  {|h,k| h[k] = [0,0,0,0,0]}
 
 
-data.each do |h|
-    times.push(DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z'))
-    dt = DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
-    if (dt.year == options.year and dt.month == options.month)
-        bytes_sent = h[11].to_i
-        object_size = h[12].to_i
-        total_time = h[13].to_i
-        turn_around_time = h[14].to_i
-        vect = [1, bytes_sent, object_size,total_time, turn_around_time]
+if options.input == :d || options.input == :r
+    times = []
 
-        ### PART 1 ###
-        idx = [dt.day, dt.hour]
-        basics[idx] = basics[idx].vector_add(vect)
 
-        ### PART 2 ###
-        browser = Browser.new(:ua => h[16], :accept_language => "en-us")
-        idx = [browser.name, browser.version, browser.platform.to_s, browser.bot?, browser.search_engine?, browser.known?, browser.mobile?, browser.tablet?, browser.console?]
-        browsers[idx] = browsers[idx].vector_add(vect)
+    data.each do |h|
+        times.push(DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z'))
+        dt = DateTime.strptime(h[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
+        if (dt.year == options.year and dt.month == options.month)
+            bytes_sent = h[11].to_i
+            object_size = h[12].to_i
+            total_time = h[13].to_i
+            turn_around_time = h[14].to_i
+            vect = [1, bytes_sent, object_size,total_time, turn_around_time]
 
-        ### PART 3 ###
-        ip[h[3]] = ip[h[3]].vector_add(vect)
+            ### PART 1 ###
+            idx = [dt.day, dt.hour]
+            basics[idx] = basics[idx].vector_add(vect)
 
-        ### PART 4 ###
-        idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_code2], gip.country(h[3]).to_hash[:country_name]]
-        countries[idx] = countries[idx].vector_add(vect)
+            ### PART 2 ###
+            browser = Browser.new(:ua => h[16], :accept_language => "en-us")
+            idx = [browser.name, browser.version, browser.platform.to_s, browser.bot?, browser.search_engine?, browser.known?, browser.mobile?, browser.tablet?, browser.console?]
+            browsers[idx] = browsers[idx].vector_add(vect)
 
-        #idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]
-        #cnames[idx] = cnames[idx].vector_add(vect)
+            ### PART 3 ###
+            ip[h[3]] = ip[h[3]].vector_add(vect)
 
-        #idx = gip.country(h[3]).to_hash[:country_code2]
-        #countries[idx] = countries[idx].vector_add(vect)
+            ### PART 4 ###
+            idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_code2], gip.country(h[3]).to_hash[:country_name]]
+            countries[idx] = countries[idx].vector_add(vect)
 
-        ### PART 5 ###
-        referrer[h[15]] = referrer[h[15]].vector_add(vect)
+            #idx = [gip.country(h[3]).to_hash[:continent_code], gip.country(h[3]).to_hash[:country_name]]
+            #cnames[idx] = cnames[idx].vector_add(vect)
 
-        ### PART 6 ###
-        http_codes[h[9]] = http_codes[h[9]].vector_add(vect)
-        if h[9].to_i == 404
-            http_440[h[8]] = http_440[h[8]].vector_add(vect)
+            #idx = gip.country(h[3]).to_hash[:country_code2]
+            #countries[idx] = countries[idx].vector_add(vect)
+
+            ### PART 5 ###
+            referrer[h[15]] = referrer[h[15]].vector_add(vect)
+
+            ### PART 6 ###
+            http_codes[h[9]] = http_codes[h[9]].vector_add(vect)
+            if h[9].to_i == 404
+                http_440[h[8]] = http_440[h[8]].vector_add(vect)
+            end
         end
     end
 end
+
 
 if options.load
     ### PART 1 ###
@@ -540,22 +545,73 @@ if options.load
     DB[:task_http_440].import(cols, data)
 end
 
-months = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-daymonth = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-daysweek = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-hours = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+if options.input == :d || options.input == :r
+    months = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+    daymonth = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+    daysweek = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+    hours = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 
 
-basics.keys.each do |k|
+    basics.keys.each do |k|
+        h = DateTime.new(options.year, options.month, k[0], k[1])
 
-    h = DateTime.new(options.year, options.month, k[0], k[1])
-
-    months[h.month] = months[h.month].vector_add(basics[k])
-    daymonth[[h.month, h.day]] = daymonth[[h.month, h.day]].vector_add(basics[k])
-    daysweek[h.wday] = daysweek[h.wday].vector_add(basics[k])
-    hours[h.hour] = hours[h.hour].vector_add(basics[k])
+        months[h.month] = months[h.month].vector_add(basics[k])
+        daymonth[[h.month, h.day]] = daymonth[[h.month, h.day]].vector_add(basics[k])
+        daysweek[h.wday] = daysweek[h.wday].vector_add(basics[k])
+        hours[h.hour] = hours[h.hour].vector_add(basics[k])
+    end
 end
 
+## read data from tables
+if options.input == :p
+    ### PART 1 ###
+    ### PART 2 ###
+
+    ## PART 3 ##
+    cols = [:ip_address, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    rows = tip_address.select(*cols)
+    rows = rows.where(:year => options.year,:month => options.month)
+    p rows.sql
+    rows.each do |row|
+        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+        ip[row[:ip_address]] = ip[row[:ip_address]].vector_add(k)
+    end
+
+    ## PART 4 ##
+    cols = [:region, :country_code, :country_name, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    rows = tcountries.select(*cols)
+    rows = rows.where(:year => options.year,:month => options.month)
+    rows.each do |row|
+        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+        idx = [row[:region], row[:country_code], row[:country_name]]
+        countries[idx] = k
+    end
+
+    ### PART 5 ###
+    cols = [:referrer, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    rows = treferrer.select(*cols)
+    rows = rows.where(:year => options.year,:month => options.month)
+    rows.each do |row|
+        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+        referrer[row[:referrer]] = k
+    end
+
+    ### PART 6 ###
+    cols = [:httpcode, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    rows = thttp_codes.select(*cols)
+    rows = rows.where(:year => options.year,:month => options.month)
+    rows.each do |row|
+        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+        http_codes[row[:httpcode]] = k
+    end
+    cols = [:request, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+    rows = thttp_440.select(*cols)
+    rows = rows.where(:year => options.year,:month => options.month)
+    rows.each do |row|
+        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+        http_440[row[:request]] = k
+    end
+end
 
 
 def showTable (title, colname, data, widths=[16,12,16,16,16,16], sortcat:1)
@@ -666,6 +722,7 @@ if options.show
         showTable "Consoles", ["Console", "Traffic"], {"console" => console[true]}
     end
 
+    ### PART 3 ###
     if options.sopt.include? 'part3' or options.sopt.include? 'all'
         showTable "IP", ["IP", "Traffic"], ip
     end

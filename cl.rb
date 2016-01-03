@@ -33,6 +33,13 @@ module Enumerable
     end
 end
 
+class Integer
+    def to_b?
+        !self.zero?
+    end
+end
+
+
 
 # Return a  structure describing the options.
 def parse(args)
@@ -545,12 +552,12 @@ if options.load
     DB[:task_http_440].import(cols, data)
 end
 
-if options.input == :d || options.input == :r
-    months = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-    daymonth = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-    daysweek = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
-    hours = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+months = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+daymonth = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+daysweek = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
+hours = Hash.new  {|h,k| h[k] = [0,0,0,0,0] }
 
+if options.input == :d || options.input == :r
 
     basics.keys.each do |k|
         h = DateTime.new(options.year, options.month, k[0], k[1])
@@ -564,52 +571,84 @@ end
 
 ## read data from tables
 if options.input == :p
+
     ### PART 1 ###
+    if options.sopt.include? 'part1' or options.sopt.include? 'all'
+        cols = [:day, :hour, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+        rows = tbasics.select(*cols)
+        rows = rows.where(:year => options.year,:month => options.month)
+        rows.each do |row|
+            k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+            h = DateTime.new(options.year, options.month, row[:day], row[:hour])
+            months[h.month] = months[h.month].vector_add(k)
+            daymonth[[h.month, h.day]] = daymonth[[h.month, h.day]].vector_add(k)
+            daysweek[h.wday] = daysweek[h.wday].vector_add(k)
+            hours[h.hour] = hours[h.hour].vector_add(k)
+        end
+    end
+
     ### PART 2 ###
+    if options.sopt.include? 'part2' or options.sopt.include? 'all'
+        cols = [:browser_name, :browser_version, :browser_platform, :browser_is_bot, :browser_is_search_engine, :browser_is_known, :browser_is_mobile, :browser_is_tablet, :browser_is_console, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+        rows = tbrowser.select(*cols)
+        rows = rows.where(:year => options.year,:month => options.month)
+        rows.each do |row|
+            k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+            idx = [row[:browser_name], row[:browser_version], row[:browser_platform], row[:browser_is_bot].to_i.to_b?, row[:browser_is_search_engine].to_i.to_b?, row[:browser_is_known].to_i.to_b?, row[:browser_is_mobile].to_i.to_b?, row[:browser_is_tablet].to_i.to_b?, row[:browser_is_console].to_i.to_b?]
+            browsers[idx] = k
+        end
+    end
 
     ## PART 3 ##
-    cols = [:ip_address, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
-    rows = tip_address.select(*cols)
-    rows = rows.where(:year => options.year,:month => options.month)
-    p rows.sql
-    rows.each do |row|
-        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
-        ip[row[:ip_address]] = ip[row[:ip_address]].vector_add(k)
+    if options.sopt.include? 'part3' or options.sopt.include? 'all'
+        cols = [:ip_address, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+        rows = tip_address.select(*cols)
+        rows = rows.where(:year => options.year,:month => options.month)
+        rows.each do |row|
+            k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+            ip[row[:ip_address]] = k
+        end
     end
 
     ## PART 4 ##
-    cols = [:region, :country_code, :country_name, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
-    rows = tcountries.select(*cols)
-    rows = rows.where(:year => options.year,:month => options.month)
-    rows.each do |row|
-        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
-        idx = [row[:region], row[:country_code], row[:country_name]]
-        countries[idx] = k
+    if options.sopt.include? 'part4' or options.sopt.include? 'all'
+        cols = [:region, :country_code, :country_name, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+        rows = tcountries.select(*cols)
+        rows = rows.where(:year => options.year,:month => options.month)
+        rows.each do |row|
+            k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+            idx = [row[:region], row[:country_code], row[:country_name]]
+            countries[idx] = k
+        end
     end
 
     ### PART 5 ###
-    cols = [:referrer, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
-    rows = treferrer.select(*cols)
-    rows = rows.where(:year => options.year,:month => options.month)
-    rows.each do |row|
-        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
-        referrer[row[:referrer]] = k
+    if options.sopt.include? 'part5' or options.sopt.include? 'all'
+        cols = [:referrer, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+        rows = treferrer.select(*cols)
+        rows = rows.where(:year => options.year,:month => options.month)
+        rows.each do |row|
+            k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+            referrer[row[:referrer]] = k
+        end
     end
 
     ### PART 6 ###
-    cols = [:httpcode, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
-    rows = thttp_codes.select(*cols)
-    rows = rows.where(:year => options.year,:month => options.month)
-    rows.each do |row|
-        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
-        http_codes[row[:httpcode]] = k
-    end
-    cols = [:request, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
-    rows = thttp_440.select(*cols)
-    rows = rows.where(:year => options.year,:month => options.month)
-    rows.each do |row|
-        k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
-        http_440[row[:request]] = k
+    if options.sopt.include? 'part6' or options.sopt.include? 'all'
+        cols = [:httpcode, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+        rows = thttp_codes.select(*cols)
+        rows = rows.where(:year => options.year,:month => options.month)
+        rows.each do |row|
+            k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+            http_codes[row[:httpcode]] = k
+        end
+        cols = [:request, :count, :bytes_sent, :object_size, :total_time, :turn_around_time]
+        rows = thttp_440.select(*cols)
+        rows = rows.where(:year => options.year,:month => options.month)
+        rows.each do |row|
+            k = [row[:count], row[:bytes_sent], row[:object_size], row[:total_time], row[:turn_around_time]]
+            http_440[row[:request]] = k
+        end
     end
 end
 

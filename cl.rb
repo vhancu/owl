@@ -419,7 +419,8 @@ if options.input == :d
         lines.each do |line|
             begin
                 row = regex_string.match(line)[1..-1]
-                if options.raw
+                dt = DateTime.strptime(row[2][1...-1] , '%d/%b/%Y:%H:%M:%S %z')
+                if options.raw and (dt.year == options.year and dt.month == options.month)
                     raw.insert( :bucket_owner => row[0],
                                 :bucket => row[1],
                                 :time => row[2],
